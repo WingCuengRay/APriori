@@ -2,6 +2,7 @@ package mining;
 
 import model.Item;
 import model.Itemset;
+import model.Pair;
 
 import java.io.IOException;
 import java.util.List;
@@ -17,11 +18,11 @@ public class Driver {
     private static void testSmallSizeDataset() throws IOException {
         List<Item> itemList = IntStream.range(0, 10).boxed().map(Item::new).collect(Collectors.toList());
 
-        APrior aPrior = new APrior(itemList, "test5.txt", 3);
-        List<Itemset> itemsets = aPrior.getKItemsets(3);
+        APrior aPrior = new APrior(itemList, "test5.txt", 2);
+        List<Pair<Itemset, Integer>> itemsets = aPrior.getKItemsets(3);
 
-        for(Itemset each: itemsets)
-            System.out.println(each.toString());
+        for(Pair<Itemset, Integer> each: itemsets)
+            System.out.println(each.getLeft() + "-" + each.getRight());
         System.out.println("--------------------------------------------------\n");
     }
 
@@ -29,10 +30,10 @@ public class Driver {
         List<Item> itemList = IntStream.range(0, 100).boxed().map(Item::new).collect(Collectors.toList());
 
         APrior aPrior = new APrior(itemList, "test100.txt", 2);
-        List<Itemset> itemsets = aPrior.getKItemsets(4);
+        List<Pair<Itemset, Integer>> itemsets = aPrior.getKItemsets(4);
 
-        for(Itemset each: itemsets)
-            System.out.println(each.toString());
+        for(Pair<Itemset, Integer> each: itemsets)
+            System.out.println(each.getLeft() + "-" + each.getRight());
         System.out.println("--------------------------------------------------\n");
     }
 }

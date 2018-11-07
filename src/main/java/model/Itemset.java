@@ -53,10 +53,11 @@ public class Itemset {
     @Override
     public String toString() {
         StringBuilder stringBuilder = new StringBuilder();
-        itemList.forEach(each -> {
-            stringBuilder.append(each.getItemID());
-            stringBuilder.append(" ");
-        });
+        List<String> itemset = itemList.stream().map(Item::getItemID).map(String::valueOf).collect(Collectors.toList());
+
+        stringBuilder.append("{");
+        stringBuilder.append(String.join(",", itemset));
+        stringBuilder.append("}");
 
         return stringBuilder.toString();
     }

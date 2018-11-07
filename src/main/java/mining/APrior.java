@@ -24,25 +24,25 @@ public class APrior {
         this.threshold = threshold;
     }
 
-    public List<Itemset> getKItemsets(int k) throws IOException {
+    public List<Pair<Itemset, Integer>> getKItemsets(int k) throws IOException {
         List<Itemset> candidates = itemList.stream().map(item -> {
             Itemset itemset = new Itemset();
             itemset.addItem(item);
             return itemset;
         }).collect(Collectors.toList());
-        List<Itemset> freqItemsets = null;
+        List<Pair<Itemset, Integer>> freqItemsets = null;
 
         for (int i = 0; i < k; i++) {
             freqItemsets = prune(candidates);
-            freqItemsets.forEach(Itemset::sort);
+            freqItemsets.forEach(each -> each.getLeft().sort());
 
-            candidates = kMinus2Merge(freqItemsets);
+            candidates = kMinus2Merge( freqItemsets.stream().map(Pair::getLeft).collect(Collectors.toList()) );
         }
 
         return freqItemsets;
     }
 
-    private List<Itemset> prune(List<Itemset> candidates) throws IOException {
+    private List<Pair<Itemset, Integer>> prune(List<Itemset> candidates) throws IOException {
         BufferedReader bufferedReader = new BufferedReader(new FileReader(fname));
         List<Pair<Itemset, Integer>> counters = candidates.stream().map(set -> new Pair<>(set, 0)).collect(Collectors.toList());
 
@@ -62,7 +62,6 @@ public class APrior {
 
         return counters.stream()
                 .filter(counter -> counter.getRight() >= threshold)
-                .map(Pair::getLeft)
                 .collect(Collectors.toList());
     }
 
