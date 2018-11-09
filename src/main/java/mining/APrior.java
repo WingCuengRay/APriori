@@ -5,23 +5,23 @@ import model.Item;
 import model.Itemset;
 import model.Pair;
 
-import java.io.BufferedReader;
-import java.io.FileReader;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class APrior {
     private List<Item> itemList;
-    private String fname;
+    private Map<Integer, Itemset> buckets;
     private int threshold;
 
-    public APrior(List<Item> itemList, String fname, int threshold) {
-        this.itemList = itemList;
-        this.fname = fname;
+    public APrior(List<Item> itemList, String fname, int threshold) throws IOException {
+        this.itemList = itemList;;
         this.threshold = threshold;
+
+        buckets = new HashMap<>();
+        Files.lines(Paths.get(fname)).map(line -> stringToBucket(line)).forEach(bucket -> buckets.put(bucket.getBucketNum(), bucket.getItemset()));
     }
 
     public List<Pair<Itemset, Integer>> getKItemsets(int k) throws IOException {
@@ -33,9 +33,13 @@ public class APrior {
         List<Pair<Itemset, Integer>> freqItemsets = null;
 
         for (int i = 0; i < k; i++) {
+            // O(200,000 * 100^k * 10)
             freqItemsets = prune(candidates);
+
+            // O(100*100)
             freqItemsets.forEach(each -> each.getLeft().sort());
 
+            // O(100*100*k)
             candidates = kMinus2Merge( freqItemsets.stream().map(Pair::getLeft).collect(Collectors.toList()) );
         }
 
@@ -43,23 +47,16 @@ public class APrior {
     }
 
     private List<Pair<Itemset, Integer>> prune(List<Itemset> candidates) throws IOException {
-        BufferedReader bufferedReader = new BufferedReader(new FileReader(fname));
         List<Pair<Itemset, Integer>> counters = candidates.stream().map(set -> new Pair<>(set, 0)).collect(Collectors.toList());
 
-        String line;
-        while ((line = bufferedReader.readLine()) != null) {
-            Bucket bucket = stringToBucket(line);
-            if(bucket == null)
-                continue;
-
-            for (Pair<Itemset, Integer> counter : counters) {
-                if (bucket.getItemset().containsAll(counter.getLeft()))
-                    counter.setRight(counter.getRight() + 1);
+        for(Map.Entry<Integer, Itemset> entry : buckets.entrySet()){
+            for(Pair<Itemset, Integer> counter : counters){
+                if(entry.getValue().containsAll(counter.getLeft()))
+                    counter.setRight(counter.getRight()+1);
             }
         }
 
-        bufferedReader.close();
-
+//        List<Itemset> notFreqItemset = counters.stream().filter(counter -> counter.getRight() <= threshold)
         return counters.stream()
                 .filter(counter -> counter.getRight() >= threshold)
                 .collect(Collectors.toList());
@@ -82,6 +79,7 @@ public class APrior {
         return new Bucket(bucketNum, itemset);
     }
 
+    // O(100*100*k)
     private List<Itemset> kMinus2Merge(List<Itemset> freqSortedSets) {
         if (freqSortedSets.isEmpty())
             return Collections.emptyList();

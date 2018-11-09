@@ -13,8 +13,8 @@ public class Driver {
     public static void main(String[] args) throws IOException {
 //        testSmallSizeDataset();
 
-//        testMediumSizeDataset();
-        testLargeSizeDataset();
+        testMediumSizeDataset();
+//        testLargeSizeDataset();
     }
 
     private static void testSmallSizeDataset() throws IOException {
@@ -34,7 +34,7 @@ public class Driver {
         List<Item> itemList = IntStream.range(0, 100).boxed().map(Item::new).collect(Collectors.toList());
 
         APrior aPrior = new APrior(itemList, "test100.txt", 2);
-        List<Pair<Itemset, Integer>> itemsets = aPrior.getKItemsets(4);
+        List<Pair<Itemset, Integer>> itemsets = aPrior.getKItemsets(5);
 
         long end = System.nanoTime();
         System.out.println("Time: " + (end-start)/1000/1000 + "ms");
@@ -49,7 +49,7 @@ public class Driver {
 
         List<Item> itemList = IntStream.range(0, 100).boxed().map(Item::new).collect(Collectors.toList());
 
-        APrior aPrior = new APrior(itemList, "test200000.txt", 1500);
+        APrior aPrior = new APrior(itemList, "test200000.txt", 20000);
         List<Pair<Itemset, Integer>> itemsets = aPrior.getKItemsets(3);
 
         long end = System.nanoTime();
