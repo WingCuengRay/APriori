@@ -3,12 +3,11 @@ package mining;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.util.Arrays;
 import java.util.Random;
 
 public class DataGenerator {
     public static void main(String ...args) throws IOException {
-        generateData(100, 10, 100, "test100.txt");
+        generateData(200000, 10, 100, "test200000.txt");
     }
 
     private static void generateData(int numOfBucket, int size, int maxValue, String outputFile) throws IOException {
