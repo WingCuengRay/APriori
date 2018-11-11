@@ -1,6 +1,5 @@
 package mining;
 
-import model.Item;
 import model.Itemset;
 import model.Pair;
 
@@ -11,19 +10,33 @@ import java.util.stream.IntStream;
 
 public class Driver {
     public static void main(String[] args) throws IOException {
-//        testSmallSizeDataset();
+        List<Integer> itemList = IntStream.range(0, 100).boxed().collect(Collectors.toList());
 
-        testMediumSizeDataset();
+        long start = System.nanoTime();
+        APrior aPrior = new APrior(itemList, "input.txt");
+        List<Pair<Itemset, Integer>> allFreqItemsets = aPrior.getAllFreqItemsets();
+
+        long end = System.nanoTime();
+        System.out.println("Time: " + (end - start) / 1000 / 1000 + "ms");
+        for (Pair<Itemset, Integer> each : allFreqItemsets)
+            System.out.println(each.getLeft() + "-" + each.getRight());
+
+
+//        testSmallSizeDataset();
+//        testMediumSizeDataset();
 //        testLargeSizeDataset();
     }
 
     private static void testSmallSizeDataset() throws IOException {
-        List<Item> itemList = IntStream.range(0, 10).boxed().map(Item::new).collect(Collectors.toList());
+        long start = System.nanoTime();
+        List<Integer> itemList = IntStream.range(0, 10).boxed().collect(Collectors.toList());
 
-        APrior aPrior = new APrior(itemList, "test5.txt", 2);
+        APrior aPrior = new APrior(itemList, "test5.txt");
         List<Pair<Itemset, Integer>> itemsets = aPrior.getKItemsets(3);
+        long end = System.nanoTime();
+        System.out.println("Time: " + (end - start) / 1000 / 1000 + "ms");
 
-        for(Pair<Itemset, Integer> each: itemsets)
+        for (Pair<Itemset, Integer> each : itemsets)
             System.out.println(each.getLeft() + "-" + each.getRight());
         System.out.println("--------------------------------------------------\n");
     }
@@ -31,31 +44,31 @@ public class Driver {
     private static void testMediumSizeDataset() throws IOException {
         long start = System.nanoTime();
 
-        List<Item> itemList = IntStream.range(0, 100).boxed().map(Item::new).collect(Collectors.toList());
+        List<Integer> itemList = IntStream.range(0, 100).boxed().collect(Collectors.toList());
 
-        APrior aPrior = new APrior(itemList, "test100.txt", 2);
-        List<Pair<Itemset, Integer>> itemsets = aPrior.getKItemsets(5);
+        APrior aPrior = new APrior(itemList, "test100.txt");
+        List<Pair<Itemset, Integer>> itemsets = aPrior.getKItemsets(3);
 
         long end = System.nanoTime();
-        System.out.println("Time: " + (end-start)/1000/1000 + "ms");
+        System.out.println("Time: " + (end - start) / 1000 / 1000 + "ms");
 
-        for(Pair<Itemset, Integer> each: itemsets)
-            System.out.println(each.getLeft() + "-" + each.getRight());
+        for (Pair<Itemset, Integer> each : itemsets)
+            System.out.println(each.getLeft().toString() + "-" + each.getRight());
         System.out.println("--------------------------------------------------\n");
     }
 
     private static void testLargeSizeDataset() throws IOException {
         long start = System.nanoTime();
 
-        List<Item> itemList = IntStream.range(0, 100).boxed().map(Item::new).collect(Collectors.toList());
+        List<Integer> itemList = IntStream.range(0, 100).boxed().collect(Collectors.toList());
 
-        APrior aPrior = new APrior(itemList, "test200000.txt", 20000);
-        List<Pair<Itemset, Integer>> itemsets = aPrior.getKItemsets(3);
+        APrior aPrior = new APrior(itemList, "test200000.txt");
+        List<Pair<Itemset, Integer>> itemsets = aPrior.getKItemsets(2);
 
         long end = System.nanoTime();
-        System.out.println("Time: " + (end-start)/1000/1000 + "ms");
+        System.out.println("Time: " + (end - start) / 1000 / 1000 + "ms");
 
-        for(Pair<Itemset, Integer> each: itemsets)
+        for (Pair<Itemset, Integer> each : itemsets)
             System.out.println(each.getLeft() + "-" + each.getRight());
         System.out.println("--------------------------------------------------\n");
     }

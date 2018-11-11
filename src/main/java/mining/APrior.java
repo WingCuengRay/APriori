@@ -1,32 +1,29 @@
 package mining;
 
 import model.Bucket;
-import model.Item;
 import model.Itemset;
 import model.Pair;
 
+import java.io.BufferedReader;
+import java.io.FileReader;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Collectors;
 
 public class APrior {
-    private List<Item> itemList;
+    private List<Integer> itemList;
     private Map<Integer, Itemset> buckets;
     private int threshold;
 
-    public APrior(List<Item> itemList, String fname, int threshold) throws IOException {
-        this.itemList = itemList;;
-        this.threshold = threshold;
+    public APrior(List<Integer> itemList, String fname) throws IOException {
+        this.itemList = itemList;
 
-        buckets = new HashMap<>();
-        Files.lines(Paths.get(fname)).map(line -> stringToBucket(line)).forEach(bucket -> buckets.put(bucket.getBucketNum(), bucket.getItemset()));
+        loadFile(fname);
     }
 
-    public List<Pair<Itemset, Integer>> getKItemsets(int k) throws IOException {
+    public List<Pair<Itemset, Integer>> getKItemsets(int k) {
         List<Itemset> candidates = itemList.stream().map(item -> {
-            Itemset itemset = new Itemset();
+            Itemset itemset = new Itemset(1);
             itemset.addItem(item);
             return itemset;
         }).collect(Collectors.toList());
@@ -46,7 +43,33 @@ public class APrior {
         return freqItemsets;
     }
 
-    private List<Pair<Itemset, Integer>> prune(List<Itemset> candidates) throws IOException {
+    public List<Pair<Itemset, Integer>> getAllFreqItemsets() {
+        List<Itemset> candidates = itemList.stream().map(item -> {
+            Itemset itemset = new Itemset(1);
+            itemset.addItem(item);
+            return itemset;
+        }).collect(Collectors.toList());
+
+        int maxBucketSize = buckets.entrySet().stream().map(Map.Entry::getValue).map(Itemset::size).max(Integer::compareTo).orElse(100);
+        List<Pair<Itemset, Integer>> allFreqItemset = new ArrayList<>();
+
+        List<Pair<Itemset, Integer>> freqItemsets = null;
+        for (int i = 0; i < maxBucketSize; i++) {
+            // O(200,000 * 100^k * 10)
+            freqItemsets = prune(candidates);
+
+            // O(100*100)
+            freqItemsets.forEach(each -> each.getLeft().sort());
+            allFreqItemset.addAll(freqItemsets);
+
+            // O(100*100*k)
+            candidates = kMinus2Merge( freqItemsets.stream().map(Pair::getLeft).collect(Collectors.toList()) );
+        }
+
+        return allFreqItemset;
+    }
+
+    private List<Pair<Itemset, Integer>> prune(List<Itemset> candidates) {
         List<Pair<Itemset, Integer>> counters = candidates.stream().map(set -> new Pair<>(set, 0)).collect(Collectors.toList());
 
         for(Map.Entry<Integer, Itemset> entry : buckets.entrySet()){
@@ -56,7 +79,6 @@ public class APrior {
             }
         }
 
-//        List<Itemset> notFreqItemset = counters.stream().filter(counter -> counter.getRight() <= threshold)
         return counters.stream()
                 .filter(counter -> counter.getRight() >= threshold)
                 .collect(Collectors.toList());
@@ -70,12 +92,12 @@ public class APrior {
 
         int bucketNum = Integer.parseInt(parts[0]);
 
-        Itemset itemset = new Itemset();
-        for (int i = 1; i < parts.length; i++) {
-            Item item = new Item(Integer.parseInt(parts[i]));
-            itemset.addItem(item);
-        }
+        int []nums = new int[parts.length-1];
+        for (int i = 1; i < parts.length; i++)
+            nums[i-1] = Integer.parseInt(parts[i]);
 
+        Arrays.sort(nums);
+        Itemset itemset = new Itemset(nums);
         return new Bucket(bucketNum, itemset);
     }
 
@@ -92,7 +114,7 @@ public class APrior {
                 Itemset firstSet = freqSortedSets.get(i);
                 Itemset secondSet = freqSortedSets.get(j);
 
-                if (firstSet.getFirstKItems(k - 2).equals(secondSet.getFirstKItems(k - 2))) {
+                if (Arrays.equals(firstSet.getFirstKItems(k-2), secondSet.getFirstKItems(k-2))) {
                     Itemset mergedSet = Itemset.merge(firstSet, secondSet);
                     candidates.add(mergedSet);
                 }
@@ -100,5 +122,28 @@ public class APrior {
         }
 
         return candidates;
+    }
+
+    private void loadFile(String fname) throws IOException {
+        String line;
+        String[] parts;
+
+        buckets = new HashMap<>();
+        BufferedReader bufferedReader = new BufferedReader(new FileReader(fname));
+        line = bufferedReader.readLine();
+        parts = line.split("\\s+");
+        int numOfline = Integer.parseInt(parts[0]);
+        threshold = Integer.parseInt(parts[1]);
+
+        for(int i=0; i<numOfline; i++){
+            line = bufferedReader.readLine();
+            if(line == null)
+                break;
+
+            Bucket bucket = stringToBucket(line);
+            buckets.put(bucket.getBucketNum(), bucket.getItemset());
+        }
+
+        return;
     }
 }
