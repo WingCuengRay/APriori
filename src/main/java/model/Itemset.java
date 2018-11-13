@@ -32,18 +32,18 @@ public class Itemset {
         int i = 0;
         int j = 0;
 
-        while(i < this.size && j < right.size){
-            while(i < this.size && llist[i] < rlist[j])
+        while (i < this.size && j < right.size) {
+            while (i < this.size && llist[i] < rlist[j])
                 i++;
 
-            if(i >= this.size || llist[i] != rlist[j])
+            if (i >= this.size || llist[i] != rlist[j])
                 return false;
 
             i++;
             j++;
         }
 
-        if(j != right.size)
+        if (j != right.size)
             return false;
         else
             return true;
@@ -102,5 +102,19 @@ public class Itemset {
         int result = Objects.hash(size);
         result = 31 * result + Arrays.hashCode(itemList);
         return result;
+    }
+
+    public static boolean kEquals(Itemset op1, Itemset op2, int k) {
+        int[] arr1 = op1.itemList;
+        int[] arr2 = op2.itemList;
+
+        for (int i = 0; i < k; i++) {
+            if (i >= op1.size || i >= op2.size)
+                return false;
+            if (arr1[i] != arr2[i])
+                return false;
+        }
+
+        return true;
     }
 }

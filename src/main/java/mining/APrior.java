@@ -8,6 +8,7 @@ import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 public class APrior {
@@ -21,29 +22,29 @@ public class APrior {
         loadFile(fname);
     }
 
-    public List<Pair<Itemset, Integer>> getKItemsets(int k) {
-        List<Itemset> candidates = itemList.stream().map(item -> {
-            Itemset itemset = new Itemset(1);
-            itemset.addItem(item);
-            return itemset;
-        }).collect(Collectors.toList());
-        List<Pair<Itemset, Integer>> freqItemsets = null;
+//    public List<Pair<Itemset, Integer>> getKItemsets(int k) {
+//        List<Itemset> candidates = itemList.stream().map(item -> {
+//            Itemset itemset = new Itemset(1);
+//            itemset.addItem(item);
+//            return itemset;
+//        }).collect(Collectors.toList());
+//        List<Pair<Itemset, Integer>> freqItemsets = null;
+//
+//        for (int i = 0; i < k; i++) {
+//            // O(200,000 * 100^k * 10)
+//            freqItemsets = prune(candidates);
+//
+//            // O(100*100)
+//            freqItemsets.forEach(each -> each.getLeft().sort());
+//
+//            // O(100*100*k)
+//            candidates = kMinus2Merge( freqItemsets.stream().map(Pair::getLeft).collect(Collectors.toList()) );
+//        }
+//
+//        return freqItemsets;
+//    }
 
-        for (int i = 0; i < k; i++) {
-            // O(200,000 * 100^k * 10)
-            freqItemsets = prune(candidates);
-
-            // O(100*100)
-            freqItemsets.forEach(each -> each.getLeft().sort());
-
-            // O(100*100*k)
-            candidates = kMinus2Merge( freqItemsets.stream().map(Pair::getLeft).collect(Collectors.toList()) );
-        }
-
-        return freqItemsets;
-    }
-
-    public List<Pair<Itemset, Integer>> getAllFreqItemsets() {
+    public List<Pair<Itemset, AtomicInteger>> getAllFreqItemsets() {
         List<Itemset> candidates = itemList.stream().map(item -> {
             Itemset itemset = new Itemset(1);
             itemset.addItem(item);
@@ -51,16 +52,21 @@ public class APrior {
         }).collect(Collectors.toList());
 
         int maxBucketSize = buckets.entrySet().stream().map(Map.Entry::getValue).map(Itemset::size).max(Integer::compareTo).orElse(100);
-        List<Pair<Itemset, Integer>> allFreqItemset = new ArrayList<>();
+        List<Pair<Itemset, AtomicInteger>> allFreqItemset = new ArrayList<>();
 
-        List<Pair<Itemset, Integer>> freqItemsets = null;
+        List<Pair<Itemset, AtomicInteger>> freqItemsets = null;
         for (int i = 0; i < maxBucketSize; i++) {
             // O(200,000 * 100^k * 10)
             freqItemsets = prune(candidates);
 
             // O(100*100)
-            freqItemsets.forEach(each -> each.getLeft().sort());
-            allFreqItemset.addAll(freqItemsets);
+            freqItemsets.parallelStream().forEach(each -> each.getLeft().sort());
+            if(i != 0)    {
+                // ignore size-1 frequent itemset
+                allFreqItemset.addAll(freqItemsets);
+//                freqItemsets.forEach(each -> System.out.println(each.getLeft().toString()));
+            }
+
 
             // O(100*100*k)
             candidates = kMinus2Merge( freqItemsets.stream().map(Pair::getLeft).collect(Collectors.toList()) );
@@ -69,18 +75,18 @@ public class APrior {
         return allFreqItemset;
     }
 
-    private List<Pair<Itemset, Integer>> prune(List<Itemset> candidates) {
-        List<Pair<Itemset, Integer>> counters = candidates.stream().map(set -> new Pair<>(set, 0)).collect(Collectors.toList());
+    private List<Pair<Itemset, AtomicInteger>> prune(List<Itemset> candidates) {
+        List<Pair<Itemset, AtomicInteger>> counters = candidates.stream().map(set -> new Pair<>(set, new AtomicInteger(0))).collect(Collectors.toList());
 
-        for(Map.Entry<Integer, Itemset> entry : buckets.entrySet()){
-            for(Pair<Itemset, Integer> counter : counters){
+        buckets.entrySet().parallelStream().forEach(entry -> {
+            for(Pair<Itemset, AtomicInteger> counter : counters){
                 if(entry.getValue().containsAll(counter.getLeft()))
-                    counter.setRight(counter.getRight()+1);
+                    counter.getRight().incrementAndGet();
             }
-        }
+        });
 
-        return counters.stream()
-                .filter(counter -> counter.getRight() >= threshold)
+        return counters.parallelStream()
+                .filter(counter -> counter.getRight().get() >= threshold)
                 .collect(Collectors.toList());
     }
 
@@ -114,10 +120,11 @@ public class APrior {
                 Itemset firstSet = freqSortedSets.get(i);
                 Itemset secondSet = freqSortedSets.get(j);
 
-                if (Arrays.equals(firstSet.getFirstKItems(k-2), secondSet.getFirstKItems(k-2))) {
-                    Itemset mergedSet = Itemset.merge(firstSet, secondSet);
-                    candidates.add(mergedSet);
-                }
+                if( !Itemset.kEquals(firstSet, secondSet, k-2))
+                    break;
+
+                Itemset mergedSet = Itemset.merge(firstSet, secondSet);
+                candidates.add(mergedSet);
             }
         }
 
