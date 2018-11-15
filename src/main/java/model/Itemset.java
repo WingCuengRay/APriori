@@ -1,5 +1,6 @@
 package model;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
@@ -62,6 +63,21 @@ public class Itemset {
 
     public void sort() {
         Arrays.sort(itemList);
+    }
+
+    public List<Itemset> getKMinus1Subset(){
+        List<Itemset> subsets = new ArrayList<>();
+        for(int i=0; i<size; i++){
+            int k = 0;
+            int subset[] = new int[size-1];
+            for(int j=0; j<size; j++){
+                if(j != i)
+                    subset[k++] = itemList[j];
+            }
+            subsets.add(new Itemset(subset));
+        }
+
+        return subsets;
     }
 
     public static Itemset merge(Itemset itemset1, Itemset itemset2) {

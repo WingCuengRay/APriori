@@ -128,6 +128,9 @@ public class APrior {
             }
         }
 
+        HashSet<Itemset> itemsetHashSet = new HashSet<>(freqSortedSets);
+        candidates = candidates.parallelStream().filter(each -> itemsetHashSet.containsAll(each.getKMinus1Subset())).collect(Collectors.toList());
+
         return candidates;
     }
 

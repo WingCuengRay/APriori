@@ -16,7 +16,7 @@ public class Driver {
         List<Integer> itemList = IntStream.range(0, 100).boxed().collect(Collectors.toList());
         long start = System.nanoTime();
 
-        APrior aPrior = new APrior(itemList, "test200000.txt");
+        APrior aPrior = new APrior(itemList, "test_150_100.txt");
         List<Pair<Itemset, AtomicInteger>> allFreqItemsets = aPrior.getAllFreqItemsets();
 
         long end = System.nanoTime();
